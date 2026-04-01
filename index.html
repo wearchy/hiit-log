@@ -42,16 +42,9 @@
     }
 
     h1 {
-      margin: 0 0 8px;
+      margin: 0 0 20px;
       font-size: clamp(24px, 5vw, 34px);
       line-height: 1.2;
-    }
-
-    .desc {
-      margin: 0 0 20px;
-      color: var(--sub);
-      line-height: 1.6;
-      font-size: 15px;
     }
 
     .grid {
@@ -146,13 +139,6 @@
       border: 1px solid var(--border);
     }
 
-    .note {
-      margin-top: 16px;
-      color: var(--sub);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
     .history {
       margin-top: 24px;
       padding-top: 20px;
@@ -164,7 +150,7 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 12px;
-      margin-bottom: 6px;
+      margin-bottom: 14px;
     }
 
     .history-title h2 {
@@ -175,13 +161,6 @@
     .history-count {
       color: var(--sub);
       font-size: 13px;
-    }
-
-    .history-sub {
-      margin: 0 0 14px;
-      color: var(--sub);
-      font-size: 13px;
-      line-height: 1.6;
     }
 
     .history-list {
@@ -231,10 +210,6 @@
 <body>
   <main class="app">
     <h1>🔥 HIIT-LOG</h1>
-    <p class="desc">
-      <strong>開始</strong>を押すと 5 秒カウントダウン後にスタートします。<br />
-      音声はブラウザーの自動再生制限のため、最初にボタンを押して開始してください。
-    </p>
 
     <section class="grid">
       <div class="card">
@@ -268,16 +243,11 @@
       <button id="stopBtn">停止・リセット</button>
     </div>
 
-    <p class="note">
-      GitHub Pages に置けば、PCでもスマホでも URL から利用できます。停止せずに最後まで完了した記録だけを、このブラウザーに保存します。
-    </p>
-
     <section class="history" aria-labelledby="historyHeading">
       <div class="history-title">
         <h2 id="historyHeading">実施履歴</h2>
         <span class="history-count" id="historyCount">保存件数: 0件</span>
       </div>
-      <p class="history-sub">完了した日時を新しい順に表示します。</p>
       <ul class="history-list" id="historyList"></ul>
       <p class="history-empty" id="historyEmpty">まだ記録はありません。</p>
       <p class="history-status" id="historyStatus" aria-live="polite"></p>
@@ -457,35 +427,32 @@
     }
 
     function playWorkoutBuzzer() {
-      playTone({
-        duration: 0.2,
-        frequency: 240,
-        sweepTo: 180,
-        type: 'square',
-        peakGain: 0.34
-      });
-      playTone({
-        duration: 0.2,
-        frequency: 180,
-        sweepTo: 140,
-        type: 'sawtooth',
-        peakGain: 0.16
-      });
-      playTone({
-        duration: 0.2,
-        frequency: 240,
-        sweepTo: 180,
-        type: 'square',
-        peakGain: 0.34,
-        offset: 0.12
-      });
-      playTone({
-        duration: 0.2,
-        frequency: 180,
-        sweepTo: 140,
-        type: 'sawtooth',
-        peakGain: 0.16,
-        offset: 0.12
+      if (!audioContext) {
+        return;
+      }
+
+      const startTime = audioContext.currentTime;
+      const duration = 0.68;
+      const gainNode = audioContext.createGain();
+      const toneDefinitions = [
+        { type: 'square', frequency: 170, sweepTo: 148 },
+        { type: 'sawtooth', frequency: 86, sweepTo: 74 }
+      ];
+
+      gainNode.gain.setValueAtTime(0.0001, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.28, startTime + 0.02);
+      gainNode.gain.setValueAtTime(0.28, startTime + 0.54);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      gainNode.connect(audioContext.destination);
+
+      toneDefinitions.forEach(({ type, frequency, sweepTo }) => {
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        oscillator.frequency.linearRampToValueAtTime(sweepTo, startTime + duration);
+        oscillator.connect(gainNode);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration + 0.05);
       });
     }
 
@@ -519,7 +486,7 @@
     function showCompletedDisplay() {
       appState = 'done';
       setNowEl.textContent = String(TOTAL_SETS);
-      phaseEl.textContent = '完了';
+      phaseEl.textContent = '待機中';
       countdownEl.textContent = '00';
       elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
       progressFillEl.style.width = '100%';
@@ -541,7 +508,7 @@
       const remainingSec = Math.max(0, START_COUNTDOWN_SEC - elapsedSec);
 
       setNowEl.textContent = '0';
-      phaseEl.textContent = '開始カウントダウン';
+      phaseEl.textContent = '待機中';
       countdownEl.textContent = String(Math.ceil(remainingSec)).padStart(2, '0');
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
@@ -566,7 +533,7 @@
         : SECOND_BEEP_SEC - setElapsed;
 
       setNowEl.textContent = String(currentSet);
-      phaseEl.textContent = setElapsed < FIRST_BEEP_SEC ? '前半' : '後半';
+      phaseEl.textContent = setElapsed < FIRST_BEEP_SEC ? '運動中' : '休憩中';
       countdownEl.textContent = String(Math.ceil(nextBeepIn)).padStart(2, '0');
 
       const completedSets = Math.floor(elapsedSec / SET_DURATION_SEC);
@@ -602,6 +569,7 @@
       appState = 'running';
       workoutStartAt = performance.now();
       workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+      playWorkoutBuzzer();
 
       for (let index = 0; index < TOTAL_SETS; index += 1) {
         const setIndex = index + 1;
@@ -649,7 +617,7 @@
         await ensureAudioReady();
       } catch (error) {
         console.error(error);
-        phaseEl.textContent = '音声を開始できません';
+        phaseEl.textContent = '待機中';
         countdownEl.textContent = '--';
         startBtn.disabled = false;
         return;
