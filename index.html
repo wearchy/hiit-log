@@ -254,6 +254,7 @@
     </section>
   </main>
 
+  <script src="nosleep.min.js"></script>
   <script>
     const TOTAL_SETS = 8;
     const FIRST_BEEP_SEC = 20;
@@ -269,7 +270,12 @@
     let countdownStartAt = 0;
     let workoutStartAt = 0;
     let workoutEndAt = 0;
+    let wakeLockSentinel = null;
+    let noSleepController = null;
+    let noSleepEnabled = false;
     let completionHistory = [];
+    let historyStatusMessage = '';
+    let runtimeStatusMessage = '';
 
     const setNowEl = document.getElementById('setNow');
     const phaseEl = document.getElementById('phase');
@@ -306,8 +312,34 @@
       return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     }
 
+    function renderStatusMessage() {
+      historyStatusEl.textContent = runtimeStatusMessage || historyStatusMessage;
+    }
+
     function setHistoryStatus(message = '') {
-      historyStatusEl.textContent = message;
+      historyStatusMessage = message;
+      renderStatusMessage();
+    }
+
+    function setRuntimeStatus(message = '') {
+      runtimeStatusMessage = message;
+      renderStatusMessage();
+    }
+
+    function isSessionActive() {
+      return appState === 'countdown' || appState === 'running';
+    }
+
+    function supportsNativeWakeLock() {
+      return 'wakeLock' in navigator && typeof navigator.wakeLock.request === 'function';
+    }
+
+    function getNoSleepController() {
+      if (!noSleepController && typeof window.NoSleep === 'function') {
+        noSleepController = new window.NoSleep();
+      }
+
+      return noSleepController;
     }
 
     function readHistoryFromStorage() {
@@ -391,6 +423,109 @@
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
+    }
+
+    function handleWakeLockRelease() {
+      wakeLockSentinel = null;
+      if (!isSessionActive() || document.visibilityState !== 'visible') {
+        return;
+      }
+
+      void requestWakeLock();
+    }
+
+    async function enableNoSleepFallback() {
+      const controller = getNoSleepController();
+      if (!controller) {
+        setRuntimeStatus('このブラウザーでは画面スリープ防止に対応していません。');
+        return;
+      }
+
+      try {
+        if (!noSleepEnabled) {
+          await controller.enable();
+          noSleepEnabled = true;
+        }
+
+        setRuntimeStatus('');
+      } catch (error) {
+        console.error(error);
+        noSleepEnabled = false;
+        setRuntimeStatus('画面スリープ防止を開始できませんでした。');
+      }
+    }
+
+    function disableNoSleepFallback() {
+      if (!noSleepEnabled) {
+        return;
+      }
+
+      const controller = getNoSleepController();
+      if (!controller) {
+        noSleepEnabled = false;
+        return;
+      }
+
+      controller.disable();
+      noSleepEnabled = false;
+    }
+
+    async function requestWakeLock(options = {}) {
+      const { fromUserGesture = false } = options;
+
+      if (!isSessionActive() || document.visibilityState !== 'visible') {
+        return;
+      }
+
+      if (!supportsNativeWakeLock()) {
+        if (noSleepEnabled) {
+          setRuntimeStatus('');
+          return;
+        }
+
+        if (!fromUserGesture) {
+          setRuntimeStatus('このブラウザーでは開始時のみ画面スリープ防止を有効化できます。');
+          return;
+        }
+
+        await enableNoSleepFallback();
+        return;
+      }
+
+      try {
+        if (wakeLockSentinel && !wakeLockSentinel.released) {
+          setRuntimeStatus('');
+          return;
+        }
+
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', handleWakeLockRelease);
+        setRuntimeStatus('');
+      } catch (error) {
+        console.error(error);
+        wakeLockSentinel = null;
+        setRuntimeStatus('画面スリープ防止を開始できませんでした。');
+      }
+    }
+
+    async function releaseWakeLock() {
+      if (!wakeLockSentinel) {
+        return;
+      }
+
+      const currentWakeLock = wakeLockSentinel;
+      wakeLockSentinel = null;
+
+      try {
+        await currentWakeLock.release();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function stopSleepPrevention() {
+      disableNoSleepFallback();
+      await releaseWakeLock();
     }
 
     function playTone({ duration, frequency, type, peakGain, offset = 0, sweepTo = frequency }) {
@@ -497,6 +632,8 @@
     function stopSequence() {
       clearAllTimers();
       resetDisplay();
+      setRuntimeStatus('');
+      void stopSleepPrevention();
     }
 
     function getCurrentSet(elapsedSec) {
@@ -563,12 +700,15 @@
       clearAllTimers();
       showCompletedDisplay();
       recordCompletion();
+      setRuntimeStatus('');
+      void stopSleepPrevention();
     }
 
     function beginWorkout() {
       appState = 'running';
       workoutStartAt = performance.now();
       workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+      void requestWakeLock();
       playWorkoutBuzzer();
 
       for (let index = 0; index < TOTAL_SETS; index += 1) {
@@ -612,20 +752,25 @@
 
       startBtn.disabled = true;
       setHistoryStatus();
-
-      try {
-        await ensureAudioReady();
-      } catch (error) {
-        console.error(error);
-        phaseEl.textContent = '待機中';
-        countdownEl.textContent = '--';
-        startBtn.disabled = false;
-        return;
-      }
+      setRuntimeStatus('');
 
       clearAllTimers();
       appState = 'countdown';
       countdownStartAt = performance.now();
+
+      const wakeLockPromise = requestWakeLock({ fromUserGesture: true });
+
+      try {
+        await ensureAudioReady();
+        await wakeLockPromise;
+      } catch (error) {
+        console.error(error);
+        resetDisplay();
+        setRuntimeStatus('音声を開始できませんでした。');
+        void stopSleepPrevention();
+        return;
+      }
+
       updateUI();
       intervalId = setInterval(updateUI, 100);
 
@@ -647,6 +792,27 @@
         beginWorkout();
       }, START_COUNTDOWN_SEC * 1000);
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!isSessionActive()) {
+        return;
+      }
+
+      if (document.visibilityState === 'visible') {
+        void requestWakeLock();
+        return;
+      }
+
+      void releaseWakeLock();
+    });
+
+    window.addEventListener('pageshow', () => {
+      if (!isSessionActive()) {
+        return;
+      }
+
+      void requestWakeLock();
+    });
 
     startBtn.addEventListener('click', startSequence);
     stopBtn.addEventListener('click', stopSequence);
