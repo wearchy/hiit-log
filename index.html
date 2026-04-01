@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>20秒＋10秒 ビープタイマー</title>
+  <title>🔥 HIIT-LOG</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -15,7 +15,11 @@
       --danger: #ef4444;
       --border: #334155;
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", sans-serif;
@@ -26,55 +30,65 @@
       place-items: center;
       padding: 20px;
     }
+
     .app {
       width: min(100%, 560px);
       background: rgba(17, 24, 39, 0.92);
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(8px);
     }
+
     h1 {
       margin: 0 0 8px;
       font-size: clamp(24px, 5vw, 34px);
       line-height: 1.2;
     }
+
     .desc {
       margin: 0 0 20px;
       color: var(--sub);
       line-height: 1.6;
       font-size: 15px;
     }
+
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       margin-bottom: 18px;
     }
+
     .card {
       background: rgba(2, 6, 23, 0.65);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
     }
+
     .label {
       color: var(--sub);
       font-size: 13px;
       margin-bottom: 8px;
     }
+
     .value {
       font-size: clamp(28px, 7vw, 42px);
       font-weight: 700;
       letter-spacing: 0.02em;
     }
+
     .phase {
       font-size: 20px;
       font-weight: 600;
     }
+
     .progress-wrap {
       margin: 18px 0 22px;
     }
+
     .progress-label {
       display: flex;
       justify-content: space-between;
@@ -83,6 +97,7 @@
       font-size: 13px;
       margin-bottom: 8px;
     }
+
     .bar {
       height: 12px;
       background: #0b1220;
@@ -90,17 +105,20 @@
       border-radius: 999px;
       overflow: hidden;
     }
+
     .fill {
       width: 0%;
       height: 100%;
       background: linear-gradient(90deg, var(--accent2), var(--accent));
       transition: width 0.2s linear;
     }
+
     .buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
+
     button {
       appearance: none;
       border: none;
@@ -111,37 +129,111 @@
       cursor: pointer;
       touch-action: manipulation;
     }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
     #startBtn {
       background: var(--accent);
       color: #062b12;
     }
+
     #stopBtn {
       background: #1f2937;
       color: var(--text);
       border: 1px solid var(--border);
     }
+
     .note {
       margin-top: 16px;
       color: var(--sub);
       font-size: 13px;
       line-height: 1.6;
     }
-    .footer {
-      margin-top: 14px;
-      font-size: 13px;
-      color: var(--sub);
+
+    .history {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
     }
+
+    .history-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .history-title h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .history-count {
+      color: var(--sub);
+      font-size: 13px;
+    }
+
+    .history-sub {
+      margin: 0 0 14px;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .history-empty {
+      margin: 0;
+      color: var(--sub);
+      font-size: 14px;
+    }
+
+    .history-status {
+      min-height: 1.2em;
+      margin: 10px 0 0;
+      color: #fca5a5;
+      font-size: 13px;
+    }
+
     @media (max-width: 480px) {
-      .grid, .buttons { grid-template-columns: 1fr; }
+      .grid,
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .history-title {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <h1>20秒＋10秒 ビープタイマー</h1>
+    <h1>🔥 HIIT-LOG</h1>
     <p class="desc">
-      スタート後、<strong>20秒で1回</strong>、さらに<strong>10秒後に1回</strong>ビープ音を鳴らします。<br>
-      これを<strong>8セット</strong>繰り返します。
+      <strong>開始</strong>を押すと 5 秒カウントダウン後にスタートします。<br />
+      音声はブラウザーの自動再生制限のため、最初にボタンを押して開始してください。
     </p>
 
     <section class="grid">
@@ -154,7 +246,7 @@
         <div class="phase" id="phase">待機中</div>
       </div>
       <div class="card">
-        <div class="label">次のビープまで</div>
+        <div class="label">次の合図まで</div>
         <div class="value" id="countdown">--</div>
       </div>
       <div class="card">
@@ -177,10 +269,19 @@
     </div>
 
     <p class="note">
-      音声はブラウザーの自動再生制限のため、最初にボタンを押して開始する必要があります。
-      GitHub Pages に置けば、PCでもスマホでもURLから利用できます。
+      GitHub Pages に置けば、PCでもスマホでも URL から利用できます。停止せずに最後まで完了した記録だけを、このブラウザーに保存します。
     </p>
-    <div class="footer">1セット = 30秒、合計 8セット = 4分</div>
+
+    <section class="history" aria-labelledby="historyHeading">
+      <div class="history-title">
+        <h2 id="historyHeading">実施履歴</h2>
+        <span class="history-count" id="historyCount">保存件数: 0件</span>
+      </div>
+      <p class="history-sub">完了した日時を新しい順に表示します。</p>
+      <ul class="history-list" id="historyList"></ul>
+      <p class="history-empty" id="historyEmpty">まだ記録はありません。</p>
+      <p class="history-status" id="historyStatus" aria-live="polite"></p>
+    </section>
   </main>
 
   <script>
@@ -188,13 +289,17 @@
     const FIRST_BEEP_SEC = 20;
     const SECOND_BEEP_SEC = 30;
     const SET_DURATION_SEC = 30;
+    const START_COUNTDOWN_SEC = 5;
+    const HISTORY_KEY = 'hiit-log-history';
 
     let audioContext = null;
-    let timeouts = [];
+    let scheduledTimers = [];
     let intervalId = null;
-    let running = false;
-    let startAt = 0;
-    let endAt = 0;
+    let appState = 'idle';
+    let countdownStartAt = 0;
+    let workoutStartAt = 0;
+    let workoutEndAt = 0;
+    let completionHistory = [];
 
     const setNowEl = document.getElementById('setNow');
     const phaseEl = document.getElementById('phase');
@@ -204,18 +309,110 @@
     const progressTextEl = document.getElementById('progressText');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const historyListEl = document.getElementById('historyList');
+    const historyEmptyEl = document.getElementById('historyEmpty');
+    const historyCountEl = document.getElementById('historyCount');
+    const historyStatusEl = document.getElementById('historyStatus');
 
     function formatMMSS(totalSeconds) {
-      const s = Math.max(0, Math.floor(totalSeconds));
-      const mm = String(Math.floor(s / 60)).padStart(2, '0');
-      const ss = String(s % 60).padStart(2, '0');
-      return `${mm}:${ss}`;
+      const seconds = Math.max(0, Math.floor(totalSeconds));
+      const minutesText = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const secondsText = String(seconds % 60).padStart(2, '0');
+      return `${minutesText}:${secondsText}`;
+    }
+
+    function formatHistoryEntry(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    function setHistoryStatus(message = '') {
+      historyStatusEl.textContent = message;
+    }
+
+    function readHistoryFromStorage() {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw === null) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
+        throw new Error('Stored history data is invalid.');
+      }
+
+      return parsed;
+    }
+
+    function writeHistoryToStorage(entries) {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+    }
+
+    function renderHistory() {
+      historyCountEl.textContent = `保存件数: ${completionHistory.length}件`;
+
+      const items = completionHistory
+        .slice()
+        .reverse()
+        .map((entry) => {
+          const item = document.createElement('li');
+          item.className = 'history-item';
+          item.textContent = formatHistoryEntry(entry);
+          return item;
+        });
+
+      historyListEl.replaceChildren(...items);
+      historyEmptyEl.hidden = items.length > 0;
+    }
+
+    function loadHistory() {
+      try {
+        completionHistory = readHistoryFromStorage();
+        setHistoryStatus();
+      } catch (error) {
+        console.error(error);
+        completionHistory = [];
+        setHistoryStatus('履歴の読み込みに失敗しました。ブラウザーの保存データを確認してください。');
+      }
+
+      renderHistory();
+    }
+
+    function recordCompletion() {
+      const nextHistory = [...completionHistory, new Date().toISOString()];
+
+      try {
+        writeHistoryToStorage(nextHistory);
+        completionHistory = nextHistory;
+        setHistoryStatus();
+      } catch (error) {
+        console.error(error);
+        setHistoryStatus('履歴の保存に失敗しました。ブラウザーの保存容量を確認してください。');
+      }
+
+      renderHistory();
     }
 
     function createAudioContext() {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error('Web Audio API is not supported in this browser.');
       }
+
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
+
       return audioContext;
     }
 
@@ -226,35 +423,90 @@
       }
     }
 
-    function beep(duration = 0.18, frequency = 880) {
-      if (!audioContext) return;
-      const now = audioContext.currentTime;
-      const osc = audioContext.createOscillator();
-      const gain = audioContext.createGain();
+    function playTone({ duration, frequency, type, peakGain, offset = 0, sweepTo = frequency }) {
+      if (!audioContext) {
+        return;
+      }
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(frequency, now);
+      const startTime = audioContext.currentTime + offset;
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+      oscillator.frequency.exponentialRampToValueAtTime(sweepTo, startTime + duration);
 
-      osc.connect(gain);
-      gain.connect(audioContext.destination);
-      osc.start(now);
-      osc.stop(now + duration + 0.02);
+      gainNode.gain.setValueAtTime(0.0001, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.03);
+    }
+
+    function playCountdownBeep() {
+      playTone({
+        duration: 0.18,
+        frequency: 880,
+        sweepTo: 880,
+        type: 'sine',
+        peakGain: 0.18
+      });
+    }
+
+    function playWorkoutBuzzer() {
+      playTone({
+        duration: 0.2,
+        frequency: 240,
+        sweepTo: 180,
+        type: 'square',
+        peakGain: 0.34
+      });
+      playTone({
+        duration: 0.2,
+        frequency: 180,
+        sweepTo: 140,
+        type: 'sawtooth',
+        peakGain: 0.16
+      });
+      playTone({
+        duration: 0.2,
+        frequency: 240,
+        sweepTo: 180,
+        type: 'square',
+        peakGain: 0.34,
+        offset: 0.12
+      });
+      playTone({
+        duration: 0.2,
+        frequency: 180,
+        sweepTo: 140,
+        type: 'sawtooth',
+        peakGain: 0.16,
+        offset: 0.12
+      });
     }
 
     function clearAllTimers() {
-      timeouts.forEach(clearTimeout);
-      timeouts = [];
-      if (intervalId) {
+      scheduledTimers.forEach(clearTimeout);
+      scheduledTimers = [];
+
+      if (intervalId !== null) {
         clearInterval(intervalId);
         intervalId = null;
       }
     }
 
+    function schedule(callback, delayMs) {
+      const timerId = setTimeout(callback, delayMs);
+      scheduledTimers.push(timerId);
+      return timerId;
+    }
+
     function resetDisplay() {
+      appState = 'idle';
       setNowEl.textContent = '0';
       phaseEl.textContent = '待機中';
       countdownEl.textContent = '--';
@@ -264,8 +516,18 @@
       startBtn.disabled = false;
     }
 
+    function showCompletedDisplay() {
+      appState = 'done';
+      setNowEl.textContent = String(TOTAL_SETS);
+      phaseEl.textContent = '完了';
+      countdownEl.textContent = '00';
+      elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
+      progressFillEl.style.width = '100%';
+      progressTextEl.textContent = '8 / 8 セット完了';
+      startBtn.disabled = false;
+    }
+
     function stopSequence() {
-      running = false;
       clearAllTimers();
       resetDisplay();
     }
@@ -274,38 +536,37 @@
       return Math.min(TOTAL_SETS, Math.floor(elapsedSec / SET_DURATION_SEC) + 1);
     }
 
-    function updateUI() {
-      if (!running) return;
+    function updateCountdownUI(now) {
+      const elapsedSec = (now - countdownStartAt) / 1000;
+      const remainingSec = Math.max(0, START_COUNTDOWN_SEC - elapsedSec);
 
-      const now = performance.now();
-      const elapsedSec = (now - startAt) / 1000;
-      const remainingTotal = Math.max(0, (endAt - now) / 1000);
+      setNowEl.textContent = '0';
+      phaseEl.textContent = '開始カウントダウン';
+      countdownEl.textContent = String(Math.ceil(remainingSec)).padStart(2, '0');
+      elapsedEl.textContent = '00:00';
+      progressFillEl.style.width = '0%';
+      progressTextEl.textContent = '0 / 8 セット完了';
+    }
+
+    function updateWorkoutUI(now) {
+      const elapsedSec = (now - workoutStartAt) / 1000;
+      const remainingTotal = Math.max(0, (workoutEndAt - now) / 1000);
 
       elapsedEl.textContent = formatMMSS(elapsedSec);
 
       if (remainingTotal <= 0) {
-        setNowEl.textContent = String(TOTAL_SETS);
-        phaseEl.textContent = '完了';
-        countdownEl.textContent = '00';
-        progressFillEl.style.width = '100%';
-        progressTextEl.textContent = '8 / 8 セット完了';
+        finishWorkout();
         return;
       }
 
       const currentSet = getCurrentSet(elapsedSec);
       const setElapsed = elapsedSec % SET_DURATION_SEC;
+      const nextBeepIn = setElapsed < FIRST_BEEP_SEC
+        ? FIRST_BEEP_SEC - setElapsed
+        : SECOND_BEEP_SEC - setElapsed;
 
       setNowEl.textContent = String(currentSet);
-
-      let nextBeepIn;
-      if (setElapsed < FIRST_BEEP_SEC) {
-        phaseEl.textContent = '20秒まで待機';
-        nextBeepIn = FIRST_BEEP_SEC - setElapsed;
-      } else {
-        phaseEl.textContent = '30秒まで待機';
-        nextBeepIn = SECOND_BEEP_SEC - setElapsed;
-      }
-
+      phaseEl.textContent = setElapsed < FIRST_BEEP_SEC ? '前半' : '後半';
       countdownEl.textContent = String(Math.ceil(nextBeepIn)).padStart(2, '0');
 
       const completedSets = Math.floor(elapsedSec / SET_DURATION_SEC);
@@ -314,57 +575,115 @@
       progressTextEl.textContent = `${completedSets} / 8 セット完了`;
     }
 
-    async function startSequence() {
-      if (running) return;
-      await ensureAudioReady();
+    function updateUI() {
+      const now = performance.now();
 
-      running = true;
-      startBtn.disabled = true;
-      startAt = performance.now();
-      endAt = startAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
-
-      for (let i = 0; i < TOTAL_SETS; i++) {
-        const base = i * SET_DURATION_SEC * 1000;
-        const setIndex = i + 1;
-
-        timeouts.push(setTimeout(() => {
-          if (!running) return;
-          setNowEl.textContent = String(setIndex);
-          phaseEl.textContent = '20秒まで待機';
-        }, base));
-
-        timeouts.push(setTimeout(() => {
-          if (!running) return;
-          beep(0.18, 880);
-        }, base + FIRST_BEEP_SEC * 1000));
-
-        timeouts.push(setTimeout(() => {
-          if (!running) return;
-          beep(0.24, 1174);
-          const done = setIndex;
-          progressTextEl.textContent = `${done} / 8 セット完了`;
-          progressFillEl.style.width = `${(done / TOTAL_SETS) * 100}%`;
-        }, base + SECOND_BEEP_SEC * 1000));
+      if (appState === 'countdown') {
+        updateCountdownUI(now);
+        return;
       }
 
-      timeouts.push(setTimeout(() => {
-        if (!running) return;
-        running = false;
-        phaseEl.textContent = '完了';
-        countdownEl.textContent = '00';
-        elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
-        progressFillEl.style.width = '100%';
-        progressTextEl.textContent = '8 / 8 セット完了';
-        startBtn.disabled = false;
-        clearAllTimers();
-      }, TOTAL_SETS * SET_DURATION_SEC * 1000));
+      if (appState === 'running') {
+        updateWorkoutUI(now);
+      }
+    }
+
+    function finishWorkout() {
+      if (appState !== 'running') {
+        return;
+      }
+
+      clearAllTimers();
+      showCompletedDisplay();
+      recordCompletion();
+    }
+
+    function beginWorkout() {
+      appState = 'running';
+      workoutStartAt = performance.now();
+      workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+
+      for (let index = 0; index < TOTAL_SETS; index += 1) {
+        const setIndex = index + 1;
+        const baseDelay = index * SET_DURATION_SEC * 1000;
+
+        schedule(() => {
+          if (appState !== 'running') {
+            return;
+          }
+
+          playWorkoutBuzzer();
+        }, baseDelay + FIRST_BEEP_SEC * 1000);
+
+        schedule(() => {
+          if (appState !== 'running') {
+            return;
+          }
+
+          playWorkoutBuzzer();
+          progressTextEl.textContent = `${setIndex} / 8 セット完了`;
+          progressFillEl.style.width = `${(setIndex / TOTAL_SETS) * 100}%`;
+        }, baseDelay + SECOND_BEEP_SEC * 1000);
+      }
+
+      schedule(() => {
+        if (appState !== 'running') {
+          return;
+        }
+
+        finishWorkout();
+      }, TOTAL_SETS * SET_DURATION_SEC * 1000);
 
       updateUI();
-      intervalId = setInterval(updateUI, 200);
+    }
+
+    async function startSequence() {
+      if (appState === 'countdown' || appState === 'running') {
+        return;
+      }
+
+      startBtn.disabled = true;
+      setHistoryStatus();
+
+      try {
+        await ensureAudioReady();
+      } catch (error) {
+        console.error(error);
+        phaseEl.textContent = '音声を開始できません';
+        countdownEl.textContent = '--';
+        startBtn.disabled = false;
+        return;
+      }
+
+      clearAllTimers();
+      appState = 'countdown';
+      countdownStartAt = performance.now();
+      updateUI();
+      intervalId = setInterval(updateUI, 100);
+
+      for (let count = 0; count < START_COUNTDOWN_SEC; count += 1) {
+        schedule(() => {
+          if (appState !== 'countdown') {
+            return;
+          }
+
+          playCountdownBeep();
+        }, count * 1000);
+      }
+
+      schedule(() => {
+        if (appState !== 'countdown') {
+          return;
+        }
+
+        beginWorkout();
+      }, START_COUNTDOWN_SEC * 1000);
     }
 
     startBtn.addEventListener('click', startSequence);
     stopBtn.addEventListener('click', stopSequence);
+
+    loadHistory();
     resetDisplay();
   </script>
 </body>
