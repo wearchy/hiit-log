@@ -278,7 +278,7 @@
       </div>
       <div class="card">
         <div class="label">状態</div>
-        <div class="phase" id="phase">待機中</div>
+        <div class="phase" id="phase">⏳ 待機中</div>
       </div>
       <div class="card">
         <div class="label">次の合図まで</div>
@@ -334,12 +334,10 @@
     const SECOND_BEEP_SEC = 30;
     const SET_DURATION_SEC = 30;
     const START_COUNTDOWN_SEC = 5;
-    const HISTORY_KEY = 'hiit-log-history';
+    const HISTORY_KEY = 'hiit-log-history-v2';
+    const LEGACY_HISTORY_KEYS = ['hiit-log-history'];
     const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
     const COUNTDOWN_CUE_COUNT = 3;
-    const TRANSITION_CUE_COUNT = 3;
-    const TRANSITION_CUE_INTERVAL_SEC = 0.86;
-    const OVERALL_END_CUE_INTERVAL_SEC = 0.92;
     const RECENT_HISTORY_LIMIT = 21;
 
     let audioContext = null;
@@ -473,22 +471,55 @@
       return noSleepController;
     }
 
-    function readHistoryFromStorage() {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw === null) {
-        return [];
+    function normalizeHistoryEntries(value) {
+      if (Array.isArray(value)) {
+        return value.filter((entry) => typeof entry === 'string');
       }
 
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
+      if (value && typeof value === 'object' && Array.isArray(value.entries)) {
+        return value.entries.filter((entry) => typeof entry === 'string');
+      }
+
+      throw new Error('Stored history data is invalid.');
+    }
+
+    function dedupeHistoryEntries(entries) {
+      return [...new Set(entries)].sort();
+    }
+
+    function readHistoryFromStorage() {
+      const mergedEntries = [];
+      let hasInvalidEntry = false;
+
+      for (const key of [HISTORY_KEY, ...LEGACY_HISTORY_KEYS]) {
+        const raw = localStorage.getItem(key);
+        if (raw === null) {
+          continue;
+        }
+
+        try {
+          const parsed = JSON.parse(raw);
+          mergedEntries.push(...normalizeHistoryEntries(parsed));
+        } catch (error) {
+          console.error(error);
+          hasInvalidEntry = true;
+        }
+      }
+
+      if (hasInvalidEntry && mergedEntries.length === 0) {
         throw new Error('Stored history data is invalid.');
       }
 
-      return parsed;
+      return dedupeHistoryEntries(mergedEntries);
     }
 
     function writeHistoryToStorage(entries) {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+      const normalizedEntries = dedupeHistoryEntries(entries);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(normalizedEntries));
+
+      LEGACY_HISTORY_KEYS.forEach((key) => {
+        localStorage.setItem(key, JSON.stringify(normalizedEntries));
+      });
     }
 
     function renderHistory() {
@@ -569,7 +600,7 @@
     }
 
     function recordCompletion() {
-      const nextHistory = [...completionHistory, new Date().toISOString()];
+      const nextHistory = dedupeHistoryEntries([...completionHistory, new Date().toISOString()]);
 
       try {
         writeHistoryToStorage(nextHistory);
@@ -739,63 +770,58 @@
       });
     }
 
-    function playWorkoutBuzzer() {
-      if (!audioContext) {
-        return;
-      }
-
-      const startTime = audioContext.currentTime;
-      const duration = 0.68;
-      const gainNode = audioContext.createGain();
-      const toneDefinitions = [
-        { type: 'square', frequency: 170, sweepTo: 148 },
-        { type: 'sawtooth', frequency: 86, sweepTo: 74 }
-      ];
-
-      gainNode.gain.setValueAtTime(0.0001, startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.28, startTime + 0.02);
-      gainNode.gain.setValueAtTime(0.28, startTime + 0.54);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-      gainNode.connect(audioContext.destination);
-
-      toneDefinitions.forEach(({ type, frequency, sweepTo }) => {
-        const oscillator = audioContext.createOscillator();
-        oscillator.type = type;
-        oscillator.frequency.setValueAtTime(frequency, startTime);
-        oscillator.frequency.linearRampToValueAtTime(sweepTo, startTime + duration);
-        oscillator.connect(gainNode);
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration + 0.05);
+    function playBrightEndingCue() {
+      playTone({
+        duration: 0.14,
+        frequency: 520,
+        sweepTo: 580,
+        type: 'sine',
+        peakGain: 0.12
+      });
+      playTone({
+        duration: 0.14,
+        frequency: 680,
+        sweepTo: 760,
+        type: 'sine',
+        peakGain: 0.12,
+        offset: 0.16
+      });
+      playTone({
+        duration: 0.38,
+        frequency: 860,
+        sweepTo: 980,
+        type: 'triangle',
+        peakGain: 0.16,
+        offset: 0.34
       });
     }
 
     function playWorkoutStartCue() {
-      playWorkoutBuzzer();
+      playBrightEndingCue();
     }
 
     function playWorkoutEndCue() {
-      playWorkoutBuzzer();
+      playBrightEndingCue();
     }
 
     function playOverallEndCue() {
-      playWorkoutBuzzer();
+      playBrightEndingCue();
     }
 
-    function playRepeatedCue(playFn, repeatCount, gapSec, shouldPlay = () => true) {
-      if (!shouldPlay()) {
-        return;
-      }
+    function scheduleCountdownSeries(targetDelayMs, shouldPlay = () => true) {
+      for (let secondsBefore = COUNTDOWN_CUE_COUNT; secondsBefore >= 1; secondsBefore -= 1) {
+        const delayMs = targetDelayMs - (secondsBefore * 1000);
+        if (delayMs < 0) {
+          continue;
+        }
 
-      playFn();
-
-      for (let repeatIndex = 1; repeatIndex < repeatCount; repeatIndex += 1) {
         schedule(() => {
           if (!shouldPlay()) {
             return;
           }
 
-          playFn();
-        }, repeatIndex * gapSec * 1000);
+          playCountdownBeep();
+        }, delayMs);
       }
     }
 
@@ -818,7 +844,7 @@
     function resetDisplay() {
       appState = 'idle';
       setNowEl.textContent = '0';
-      phaseEl.textContent = '待機中';
+      phaseEl.textContent = '⏳ 待機中';
       countdownEl.textContent = '--';
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
@@ -829,7 +855,7 @@
     function showCompletedDisplay() {
       appState = 'done';
       setNowEl.textContent = String(TOTAL_SETS);
-      phaseEl.textContent = '待機中';
+      phaseEl.textContent = '⏳ 待機中';
       countdownEl.textContent = '00';
       elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
       progressFillEl.style.width = '100%';
@@ -853,7 +879,7 @@
       const remainingSec = Math.max(0, START_COUNTDOWN_SEC - elapsedSec);
 
       setNowEl.textContent = '0';
-      phaseEl.textContent = '待機中';
+      phaseEl.textContent = '⏳ 待機中';
       countdownEl.textContent = String(Math.ceil(remainingSec)).padStart(2, '0');
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
@@ -908,7 +934,7 @@
       clearAllTimers();
       showCompletedDisplay();
       recordCompletion();
-      playRepeatedCue(playOverallEndCue, TRANSITION_CUE_COUNT, OVERALL_END_CUE_INTERVAL_SEC, () => appState === 'done');
+      playOverallEndCue();
       setRuntimeStatus('');
       void stopSleepPrevention();
     }
@@ -918,30 +944,35 @@
       workoutStartAt = performance.now();
       workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
       void requestWakeLock();
-      playRepeatedCue(playWorkoutStartCue, TRANSITION_CUE_COUNT, TRANSITION_CUE_INTERVAL_SEC, () => appState === 'running');
+      playWorkoutStartCue();
 
       for (let index = 0; index < TOTAL_SETS; index += 1) {
         const setIndex = index + 1;
         const baseDelay = index * SET_DURATION_SEC * 1000;
+        const workoutEndDelay = baseDelay + FIRST_BEEP_SEC * 1000;
+        const restEndDelay = baseDelay + SECOND_BEEP_SEC * 1000;
+
+        scheduleCountdownSeries(workoutEndDelay, () => appState === 'running');
 
         schedule(() => {
           if (appState !== 'running') {
             return;
           }
 
-          playRepeatedCue(playWorkoutEndCue, TRANSITION_CUE_COUNT, TRANSITION_CUE_INTERVAL_SEC, () => appState === 'running');
-        }, baseDelay + FIRST_BEEP_SEC * 1000);
+          playWorkoutEndCue();
+        }, workoutEndDelay);
 
+        scheduleCountdownSeries(restEndDelay, () => appState === 'running');
         if (setIndex < TOTAL_SETS) {
           schedule(() => {
             if (appState !== 'running') {
               return;
             }
 
-            playRepeatedCue(playWorkoutStartCue, TRANSITION_CUE_COUNT, TRANSITION_CUE_INTERVAL_SEC, () => appState === 'running');
+            playWorkoutStartCue();
             progressTextEl.textContent = `${setIndex} / 8 セット完了`;
             progressFillEl.style.width = `${(setIndex / TOTAL_SETS) * 100}%`;
-          }, baseDelay + SECOND_BEEP_SEC * 1000);
+          }, restEndDelay);
         }
       }
 
@@ -984,16 +1015,7 @@
 
       updateUI();
       intervalId = setInterval(updateUI, 100);
-
-      for (let count = START_COUNTDOWN_SEC - COUNTDOWN_CUE_COUNT; count < START_COUNTDOWN_SEC; count += 1) {
-        schedule(() => {
-          if (appState !== 'countdown') {
-            return;
-          }
-
-          playCountdownBeep();
-        }, count * 1000);
-      }
+      scheduleCountdownSeries(START_COUNTDOWN_SEC * 1000, () => appState === 'countdown');
 
       schedule(() => {
         if (appState !== 'countdown') {
