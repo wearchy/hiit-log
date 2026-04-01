@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>20秒＋10秒 ビープタイマー</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --sub: #94a3b8;
+      --accent: #22c55e;
+      --accent2: #38bdf8;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: linear-gradient(180deg, #020617 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .app {
+      width: min(100%, 560px);
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 5vw, 34px);
+      line-height: 1.2;
+    }
+    .desc {
+      margin: 0 0 20px;
+      color: var(--sub);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .label {
+      color: var(--sub);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .value {
+      font-size: clamp(28px, 7vw, 42px);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .phase {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .progress-wrap {
+      margin: 18px 0 22px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--sub);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .bar {
+      height: 12px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.2s linear;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 18px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    #startBtn {
+      background: var(--accent);
+      color: #062b12;
+    }
+    #stopBtn {
+      background: #1f2937;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .note {
+      margin-top: 16px;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .footer {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--sub);
+    }
+    @media (max-width: 480px) {
+      .grid, .buttons { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>20秒＋10秒 ビープタイマー</h1>
+    <p class="desc">
+      スタート後、<strong>20秒で1回</strong>、さらに<strong>10秒後に1回</strong>ビープ音を鳴らします。<br>
+      これを<strong>8セット</strong>繰り返します。
+    </p>
+
+    <section class="grid">
+      <div class="card">
+        <div class="label">現在のセット</div>
+        <div class="value"><span id="setNow">0</span> / 8</div>
+      </div>
+      <div class="card">
+        <div class="label">状態</div>
+        <div class="phase" id="phase">待機中</div>
+      </div>
+      <div class="card">
+        <div class="label">次のビープまで</div>
+        <div class="value" id="countdown">--</div>
+      </div>
+      <div class="card">
+        <div class="label">経過時間</div>
+        <div class="value" id="elapsed">00:00</div>
+      </div>
+    </section>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>全体進捗</span>
+        <span id="progressText">0 / 8 セット完了</span>
+      </div>
+      <div class="bar"><div class="fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="buttons">
+      <button id="startBtn">開始</button>
+      <button id="stopBtn">停止・リセット</button>
+    </div>
+
+    <p class="note">
+      音声はブラウザーの自動再生制限のため、最初にボタンを押して開始する必要があります。
+      GitHub Pages に置けば、PCでもスマホでもURLから利用できます。
+    </p>
+    <div class="footer">1セット = 30秒、合計 8セット = 4分</div>
+  </main>
+
+  <script>
+    const TOTAL_SETS = 8;
+    const FIRST_BEEP_SEC = 20;
+    const SECOND_BEEP_SEC = 30;
+    const SET_DURATION_SEC = 30;
+
+    let audioContext = null;
+    let timeouts = [];
+    let intervalId = null;
+    let running = false;
+    let startAt = 0;
+    let endAt = 0;
+
+    const setNowEl = document.getElementById('setNow');
+    const phaseEl = document.getElementById('phase');
+    const countdownEl = document.getElementById('countdown');
+    const elapsedEl = document.getElementById('elapsed');
+    const progressFillEl = document.getElementById('progressFill');
+    const progressTextEl = document.getElementById('progressText');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    function formatMMSS(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function createAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioContext;
+    }
+
+    async function ensureAudioReady() {
+      const ctx = createAudioContext();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+    }
+
+    function beep(duration = 0.18, frequency = 880) {
+      if (!audioContext) return;
+      const now = audioContext.currentTime;
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    }
+
+    function clearAllTimers() {
+      timeouts.forEach(clearTimeout);
+      timeouts = [];
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function resetDisplay() {
+      setNowEl.textContent = '0';
+      phaseEl.textContent = '待機中';
+      countdownEl.textContent = '--';
+      elapsedEl.textContent = '00:00';
+      progressFillEl.style.width = '0%';
+      progressTextEl.textContent = '0 / 8 セット完了';
+      startBtn.disabled = false;
+    }
+
+    function stopSequence() {
+      running = false;
+      clearAllTimers();
+      resetDisplay();
+    }
+
+    function getCurrentSet(elapsedSec) {
+      return Math.min(TOTAL_SETS, Math.floor(elapsedSec / SET_DURATION_SEC) + 1);
+    }
+
+    function updateUI() {
+      if (!running) return;
+
+      const now = performance.now();
+      const elapsedSec = (now - startAt) / 1000;
+      const remainingTotal = Math.max(0, (endAt - now) / 1000);
+
+      elapsedEl.textContent = formatMMSS(elapsedSec);
+
+      if (remainingTotal <= 0) {
+        setNowEl.textContent = String(TOTAL_SETS);
+        phaseEl.textContent = '完了';
+        countdownEl.textContent = '00';
+        progressFillEl.style.width = '100%';
+        progressTextEl.textContent = '8 / 8 セット完了';
+        return;
+      }
+
+      const currentSet = getCurrentSet(elapsedSec);
+      const setElapsed = elapsedSec % SET_DURATION_SEC;
+
+      setNowEl.textContent = String(currentSet);
+
+      let nextBeepIn;
+      if (setElapsed < FIRST_BEEP_SEC) {
+        phaseEl.textContent = '20秒まで待機';
+        nextBeepIn = FIRST_BEEP_SEC - setElapsed;
+      } else {
+        phaseEl.textContent = '30秒まで待機';
+        nextBeepIn = SECOND_BEEP_SEC - setElapsed;
+      }
+
+      countdownEl.textContent = String(Math.ceil(nextBeepIn)).padStart(2, '0');
+
+      const completedSets = Math.floor(elapsedSec / SET_DURATION_SEC);
+      const percent = Math.min(100, (elapsedSec / (TOTAL_SETS * SET_DURATION_SEC)) * 100);
+      progressFillEl.style.width = `${percent}%`;
+      progressTextEl.textContent = `${completedSets} / 8 セット完了`;
+    }
+
+    async function startSequence() {
+      if (running) return;
+      await ensureAudioReady();
+
+      running = true;
+      startBtn.disabled = true;
+      startAt = performance.now();
+      endAt = startAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+
+      for (let i = 0; i < TOTAL_SETS; i++) {
+        const base = i * SET_DURATION_SEC * 1000;
+        const setIndex = i + 1;
+
+        timeouts.push(setTimeout(() => {
+          if (!running) return;
+          setNowEl.textContent = String(setIndex);
+          phaseEl.textContent = '20秒まで待機';
+        }, base));
+
+        timeouts.push(setTimeout(() => {
+          if (!running) return;
+          beep(0.18, 880);
+        }, base + FIRST_BEEP_SEC * 1000));
+
+        timeouts.push(setTimeout(() => {
+          if (!running) return;
+          beep(0.24, 1174);
+          const done = setIndex;
+          progressTextEl.textContent = `${done} / 8 セット完了`;
+          progressFillEl.style.width = `${(done / TOTAL_SETS) * 100}%`;
+        }, base + SECOND_BEEP_SEC * 1000));
+      }
+
+      timeouts.push(setTimeout(() => {
+        if (!running) return;
+        running = false;
+        phaseEl.textContent = '完了';
+        countdownEl.textContent = '00';
+        elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
+        progressFillEl.style.width = '100%';
+        progressTextEl.textContent = '8 / 8 セット完了';
+        startBtn.disabled = false;
+        clearAllTimers();
+      }, TOTAL_SETS * SET_DURATION_SEC * 1000));
+
+      updateUI();
+      intervalId = setInterval(updateUI, 200);
+    }
+
+    startBtn.addEventListener('click', startSequence);
+    stopBtn.addEventListener('click', stopSequence);
+    resetDisplay();
+  </script>
+</body>
+</html>
