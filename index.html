@@ -54,6 +54,12 @@
       margin-bottom: 18px;
     }
 
+    .grid-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
     .card {
       background: rgba(2, 6, 23, 0.65);
       border: 1px solid var(--border);
@@ -82,15 +88,6 @@
       margin: 18px 0 22px;
     }
 
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--sub);
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-
     .bar {
       height: 12px;
       background: #0b1220;
@@ -108,7 +105,7 @@
 
     .buttons {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 12px;
     }
 
@@ -133,10 +130,9 @@
       color: #062b12;
     }
 
-    #stopBtn {
-      background: #1f2937;
-      color: var(--text);
-      border: 1px solid var(--border);
+    #startBtn.is-stop {
+      background: var(--danger);
+      color: #fff1f2;
     }
 
     .history {
@@ -256,6 +252,7 @@
 
     @media (max-width: 480px) {
       .grid,
+      .grid-row,
       .buttons {
         grid-template-columns: 1fr;
       }
@@ -272,41 +269,40 @@
     <h1>🔥 HIIT-LOG</h1>
 
     <section class="grid">
-      <div class="card">
-        <div class="label">現在のセット</div>
-        <div class="value"><span id="setNow">0</span> / 8</div>
+      <div class="grid-row">
+        <div class="card">
+          <div class="label">現在のセット</div>
+          <div class="value"><span id="setNow">0</span> / 8</div>
+        </div>
+        <div class="card">
+          <div class="label">状態</div>
+          <div class="phase" id="phase">⏳ 待機中</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="label">状態</div>
-        <div class="phase" id="phase">⏳ 待機中</div>
-      </div>
-      <div class="card">
-        <div class="label">次の合図まで</div>
-        <div class="value" id="countdown">--</div>
-      </div>
-      <div class="card">
-        <div class="label">経過時間</div>
-        <div class="value" id="elapsed">00:00</div>
+      <div class="grid-row">
+        <div class="card">
+          <div class="label">次の合図まで</div>
+          <div class="value" id="countdown">--</div>
+        </div>
+        <div class="card">
+          <div class="label">経過時間</div>
+          <div class="value" id="elapsed">00:00</div>
+        </div>
       </div>
     </section>
 
     <div class="progress-wrap">
-      <div class="progress-label">
-        <span>全体進捗</span>
-        <span id="progressText">0 / 8 セット完了</span>
-      </div>
       <div class="bar"><div class="fill" id="progressFill"></div></div>
     </div>
 
     <div class="buttons">
       <button id="startBtn">開始</button>
-      <button id="stopBtn">停止・リセット</button>
     </div>
 
     <section class="history" aria-labelledby="historyHeading">
       <div class="history-title">
-        <h2 id="historyHeading">コミットログ</h2>
-        <span class="history-count" id="historyCount">コミット数: 0件</span>
+        <h2 id="historyHeading">履歴</h2>
+        <span class="history-count" id="historyCount">記録数: 0件</span>
       </div>
       <div class="history-weekdays" aria-hidden="true">
         <span>月</span>
@@ -320,7 +316,7 @@
       <div class="history-graph" id="historyGraph"></div>
       <p class="history-empty" id="historyEmpty">まだ草は生えていません。</p>
       <div class="history-log-wrap" id="historyLogWrap" hidden>
-        <div class="history-log-label">最近のコミット</div>
+        <div class="history-log-label">最近の記録</div>
         <ul class="history-log" id="historyLog"></ul>
       </div>
       <p class="history-status" id="historyStatus" aria-live="polite"></p>
@@ -359,9 +355,7 @@
     const countdownEl = document.getElementById('countdown');
     const elapsedEl = document.getElementById('elapsed');
     const progressFillEl = document.getElementById('progressFill');
-    const progressTextEl = document.getElementById('progressText');
     const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
     const historyGraphEl = document.getElementById('historyGraph');
     const historyEmptyEl = document.getElementById('historyEmpty');
     const historyLogWrapEl = document.getElementById('historyLogWrap');
@@ -523,7 +517,7 @@
     }
 
     function renderHistory() {
-      historyCountEl.textContent = `コミット数: ${completionHistory.length}件`;
+      historyCountEl.textContent = `記録数: ${completionHistory.length}件`;
 
       const validEntries = completionHistory
         .map((entry) => ({ raw: entry, date: new Date(entry) }))
@@ -825,6 +819,18 @@
       }
     }
 
+    function updateActionButton() {
+      if (isSessionActive()) {
+        startBtn.textContent = '停止・リセット';
+        startBtn.classList.add('is-stop');
+        return;
+      }
+
+      startBtn.textContent = '開始';
+      startBtn.classList.remove('is-stop');
+      startBtn.disabled = false;
+    }
+
     function clearAllTimers() {
       scheduledTimers.forEach(clearTimeout);
       scheduledTimers = [];
@@ -848,8 +854,7 @@
       countdownEl.textContent = '--';
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
-      progressTextEl.textContent = '0 / 8 セット完了';
-      startBtn.disabled = false;
+      updateActionButton();
     }
 
     function showCompletedDisplay() {
@@ -859,8 +864,7 @@
       countdownEl.textContent = '00';
       elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
       progressFillEl.style.width = '100%';
-      progressTextEl.textContent = '8 / 8 セット完了';
-      startBtn.disabled = false;
+      updateActionButton();
     }
 
     function stopSequence() {
@@ -883,7 +887,6 @@
       countdownEl.textContent = String(Math.ceil(remainingSec)).padStart(2, '0');
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
-      progressTextEl.textContent = '0 / 8 セット完了';
     }
 
     function updateWorkoutUI(now) {
@@ -907,10 +910,8 @@
       phaseEl.textContent = setElapsed < FIRST_BEEP_SEC ? '💪 運動中' : '😌 休憩中';
       countdownEl.textContent = String(Math.ceil(nextBeepIn)).padStart(2, '0');
 
-      const completedSets = Math.floor(elapsedSec / SET_DURATION_SEC);
       const percent = Math.min(100, (elapsedSec / (TOTAL_SETS * SET_DURATION_SEC)) * 100);
       progressFillEl.style.width = `${percent}%`;
-      progressTextEl.textContent = `${completedSets} / 8 セット完了`;
     }
 
     function updateUI() {
@@ -943,6 +944,7 @@
       appState = 'running';
       workoutStartAt = performance.now();
       workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+      updateActionButton();
       void requestWakeLock();
       playWorkoutStartCue();
 
@@ -970,7 +972,6 @@
             }
 
             playWorkoutStartCue();
-            progressTextEl.textContent = `${setIndex} / 8 セット完了`;
             progressFillEl.style.width = `${(setIndex / TOTAL_SETS) * 100}%`;
           }, restEndDelay);
         }
@@ -992,13 +993,13 @@
         return;
       }
 
-      startBtn.disabled = true;
       setHistoryStatus();
       setRuntimeStatus('');
 
       clearAllTimers();
       appState = 'countdown';
       countdownStartAt = performance.now();
+      updateActionButton();
 
       const wakeLockPromise = requestWakeLock({ fromUserGesture: true });
 
@@ -1047,8 +1048,14 @@
       void requestWakeLock();
     });
 
-    startBtn.addEventListener('click', startSequence);
-    stopBtn.addEventListener('click', stopSequence);
+    startBtn.addEventListener('click', () => {
+      if (isSessionActive()) {
+        stopSequence();
+        return;
+      }
+
+      void startSequence();
+    });
 
     loadHistory();
     resetDisplay();
