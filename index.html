@@ -312,21 +312,21 @@
     <section class="grid">
       <div class="grid-row">
         <div class="card">
-          <div class="label">現在のセット</div>
+          <div class="label">Set</div>
           <div class="value"><span id="setNow">0</span> / 8</div>
         </div>
         <div class="card">
-          <div class="label">状態</div>
-          <div class="phase" id="phase">⏳ 待機</div>
+          <div class="label">Status</div>
+          <div class="phase" id="phase">⏳ Wait</div>
         </div>
       </div>
       <div class="grid-row">
         <div class="card">
-          <div class="label">次の合図まで</div>
+          <div class="label">Next</div>
           <div class="value" id="countdown">--</div>
         </div>
         <div class="card">
-          <div class="label">経過時間</div>
+          <div class="label">Time</div>
           <div class="value" id="elapsed">00:00</div>
         </div>
       </div>
@@ -337,21 +337,21 @@
     </div>
 
     <div class="buttons">
-      <button id="startBtn">開始</button>
+      <button id="startBtn">Start</button>
     </div>
 
     <section class="history">
       <div class="history-title">
-        <span class="history-count" id="historyCount">0 コミット</span>
+        <span class="history-count" id="historyCount">0 commits</span>
       </div>
       <div class="history-weekdays" aria-hidden="true">
-        <span>月</span>
-        <span>火</span>
-        <span>水</span>
-        <span>木</span>
-        <span>金</span>
-        <span>土</span>
-        <span>日</span>
+        <span>Mon</span>
+        <span>Tue</span>
+        <span>Wed</span>
+        <span>Thu</span>
+        <span>Fri</span>
+        <span>Sat</span>
+        <span>Sun</span>
       </div>
       <div class="history-graph" id="historyGraph"></div>
       <div class="history-log-wrap" id="historyLogWrap" hidden>
@@ -371,7 +371,7 @@
     const NIGHT_CUTOFF_HOUR = 2;
     const HISTORY_KEY = 'hiit-log-history-v2';
     const LEGACY_HISTORY_KEYS = ['hiit-log-history'];
-    const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+    const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const COUNTDOWN_CUE_COUNT = 3;
     const RECENT_HISTORY_LIMIT = 21;
     const SEED_HISTORY = [
@@ -568,7 +568,7 @@
     }
 
     function renderHistory() {
-      historyCountEl.textContent = `${completionHistory.length} コミット`;
+      historyCountEl.textContent = `${completionHistory.length} commits`;
 
       const validEntries = completionHistory
         .map((entry) => ({ raw: entry, date: new Date(entry) }))
@@ -604,8 +604,8 @@
           const cell = document.createElement('div');
           cell.className = `history-cell level-${getHistoryLevel(count)}`;
           cell.setAttribute('role', 'img');
-          cell.setAttribute('aria-label', `${formatDateLabel(cellDate)} ${count}件`);
-          cell.title = `${formatDateLabel(cellDate)} ${count}件`;
+          cell.setAttribute('aria-label', `${formatDateLabel(cellDate)} ${count}`);
+          cell.title = `${formatDateLabel(cellDate)} ${count}`;
           weekRow.appendChild(cell);
         }
 
@@ -639,7 +639,7 @@
       } catch (error) {
         console.error(error);
         completionHistory = dedupeHistoryEntries([...SEED_HISTORY]);
-        setHistoryStatus('履歴の読み込みに失敗しました。ブラウザーの保存データを確認してください。');
+        setHistoryStatus('Failed to load history. Check your browser storage.');
       }
 
       renderHistory();
@@ -654,7 +654,7 @@
         setHistoryStatus();
       } catch (error) {
         console.error(error);
-        setHistoryStatus('履歴の保存に失敗しました。ブラウザーの保存容量を確認してください。');
+        setHistoryStatus('Failed to save history. Check your browser storage.');
       }
 
       renderHistory();
@@ -692,7 +692,7 @@
     async function enableNoSleepFallback() {
       const controller = getNoSleepController();
       if (!controller) {
-        setRuntimeStatus('このブラウザーでは画面スリープ防止に対応していません。');
+        setRuntimeStatus('Wake lock is not supported in this browser.');
         return;
       }
 
@@ -706,7 +706,7 @@
       } catch (error) {
         console.error(error);
         noSleepEnabled = false;
-        setRuntimeStatus('画面スリープ防止を開始できませんでした。');
+        setRuntimeStatus('Failed to enable wake lock.');
       }
     }
 
@@ -739,7 +739,7 @@
         }
 
         if (!fromUserGesture) {
-          setRuntimeStatus('このブラウザーでは開始時のみ画面スリープ防止を有効化できます。');
+          setRuntimeStatus('Wake lock can only be enabled on start in this browser.');
           return;
         }
 
@@ -759,7 +759,7 @@
       } catch (error) {
         console.error(error);
         wakeLockSentinel = null;
-        setRuntimeStatus('画面スリープ防止を開始できませんでした。');
+        setRuntimeStatus('Failed to enable wake lock.');
       }
     }
 
@@ -879,12 +879,12 @@
 
     function updateActionButton() {
       if (isSessionActive()) {
-        startBtn.textContent = '停止・リセット';
+        startBtn.textContent = 'Stop';
         startBtn.classList.add('is-stop');
         return;
       }
 
-      startBtn.textContent = '開始';
+      startBtn.textContent = 'Start';
       startBtn.classList.remove('is-stop');
       startBtn.disabled = false;
     }
@@ -908,7 +908,7 @@
     function resetDisplay() {
       appState = 'idle';
       setNowEl.textContent = '0';
-      phaseEl.textContent = '⏳ 待機';
+      phaseEl.textContent = '⏳ Wait';
       countdownEl.textContent = '--';
       elapsedEl.textContent = '00:00';
       progressFillEl.style.width = '0%';
@@ -918,7 +918,7 @@
     function showCompletedDisplay() {
       appState = 'done';
       setNowEl.textContent = String(TOTAL_SETS);
-      phaseEl.textContent = '🎉 完了！';
+      phaseEl.textContent = '🎉 Done!';
       countdownEl.textContent = '00';
       elapsedEl.textContent = formatMMSS(TOTAL_WORKOUT_SEC);
       progressFillEl.style.width = '100%';
@@ -963,9 +963,9 @@
       setNowEl.textContent = String(info.set);
 
       if (info.phase === 'exercise') {
-        phaseEl.textContent = '💪 運動';
+        phaseEl.textContent = '💪 Go!';
       } else {
-        phaseEl.textContent = info.set === 0 ? '⏳ 待機' : '😌 休憩';
+        phaseEl.textContent = info.set === 0 ? '⏳ Wait' : '😌 Rest';
       }
 
       countdownEl.textContent = String(Math.ceil(info.countdown)).padStart(2, '0');
@@ -1061,7 +1061,7 @@
       } catch (error) {
         console.error(error);
         resetDisplay();
-        setRuntimeStatus('音声を開始できませんでした。');
+        setRuntimeStatus('Failed to start audio.');
         void stopSleepPrevention();
         return;
       }
