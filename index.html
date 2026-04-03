@@ -334,10 +334,11 @@
   <script src="nosleep.min.js"></script>
   <script>
     const TOTAL_SETS = 8;
-    const FIRST_BEEP_SEC = 20;
-    const SECOND_BEEP_SEC = 30;
+    const EXERCISE_DURATION_SEC = 20;
+    const REST_DURATION_SEC = 10;
     const SET_DURATION_SEC = 30;
-    const START_COUNTDOWN_SEC = 5;
+    const TOTAL_WORKOUT_SEC = TOTAL_SETS * SET_DURATION_SEC;
+    const NIGHT_CUTOFF_HOUR = 2;
     const HISTORY_KEY = 'hiit-log-history-v2';
     const LEGACY_HISTORY_KEYS = ['hiit-log-history'];
     const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
@@ -348,7 +349,6 @@
     let scheduledTimers = [];
     let intervalId = null;
     let appState = 'idle';
-    let countdownStartAt = 0;
     let workoutStartAt = 0;
     let workoutEndAt = 0;
     let wakeLockSentinel = null;
@@ -418,7 +418,7 @@
     }
 
     function isSessionActive() {
-      return appState === 'countdown' || appState === 'running';
+      return appState === 'running';
     }
 
     function formatDateKey(date) {
@@ -438,6 +438,16 @@
       weekStart.setHours(0, 0, 0, 0);
       weekStart.setDate(weekStart.getDate() - getMondayIndex(weekStart));
       return weekStart;
+    }
+
+    function getLogicalDate(date) {
+      if (date.getHours() < NIGHT_CUTOFF_HOUR) {
+        const adjusted = new Date(date);
+        adjusted.setDate(adjusted.getDate() - 1);
+        return adjusted;
+      }
+
+      return date;
     }
 
     function getHistoryLevel(count) {
@@ -541,12 +551,12 @@
 
       const countsByDate = new Map();
       validEntries.forEach(({ date }) => {
-        const key = formatDateKey(date);
+        const key = formatDateKey(getLogicalDate(date));
         countsByDate.set(key, (countsByDate.get(key) ?? 0) + 1);
       });
 
-      const oldestWeekStart = getWeekStart(validEntries[0].date);
-      const newestWeekStart = getWeekStart(validEntries[validEntries.length - 1].date);
+      const oldestWeekStart = getWeekStart(getLogicalDate(validEntries[0].date));
+      const newestWeekStart = getWeekStart(getLogicalDate(validEntries[validEntries.length - 1].date));
       const weekRows = [];
 
       for (let cursor = new Date(newestWeekStart); cursor >= oldestWeekStart; cursor.setDate(cursor.getDate() - 7)) {
@@ -803,8 +813,14 @@
       playBrightEndingCue();
     }
 
-    function playOverallEndCue() {
-      playBrightEndingCue();
+    function playFanfare() {
+      playTone({ duration: 0.15, frequency: 523.25, sweepTo: 523.25, type: 'triangle', peakGain: 0.16, offset: 0 });
+      playTone({ duration: 0.15, frequency: 659.25, sweepTo: 659.25, type: 'triangle', peakGain: 0.16, offset: 0.16 });
+      playTone({ duration: 0.15, frequency: 783.99, sweepTo: 783.99, type: 'triangle', peakGain: 0.17, offset: 0.32 });
+      playTone({ duration: 0.55, frequency: 1046.50, sweepTo: 1046.50, type: 'triangle', peakGain: 0.18, offset: 0.48 });
+      playTone({ duration: 0.55, frequency: 523.25, sweepTo: 523.25, type: 'sine', peakGain: 0.10, offset: 0.48 });
+      playTone({ duration: 0.55, frequency: 659.25, sweepTo: 659.25, type: 'sine', peakGain: 0.08, offset: 0.48 });
+      playTone({ duration: 0.55, frequency: 783.99, sweepTo: 783.99, type: 'sine', peakGain: 0.08, offset: 0.48 });
     }
 
     function scheduleCountdownSeries(targetDelayMs, shouldPlay = () => true) {
@@ -865,9 +881,9 @@
     function showCompletedDisplay() {
       appState = 'done';
       setNowEl.textContent = String(TOTAL_SETS);
-      phaseEl.textContent = '⏳ 待機中';
+      phaseEl.textContent = '🎉 完了！';
       countdownEl.textContent = '00';
-      elapsedEl.textContent = formatMMSS(TOTAL_SETS * SET_DURATION_SEC);
+      elapsedEl.textContent = formatMMSS(TOTAL_WORKOUT_SEC);
       progressFillEl.style.width = '100%';
       updateActionButton();
     }
@@ -879,19 +895,20 @@
       void stopSleepPrevention();
     }
 
-    function getCurrentSet(elapsedSec) {
-      return Math.min(TOTAL_SETS, Math.floor(elapsedSec / SET_DURATION_SEC) + 1);
-    }
+    function getPhaseInfo(elapsedSec) {
+      if (elapsedSec < REST_DURATION_SEC) {
+        return { phase: 'rest', set: 0, countdown: REST_DURATION_SEC - elapsedSec };
+      }
 
-    function updateCountdownUI(now) {
-      const elapsedSec = (now - countdownStartAt) / 1000;
-      const remainingSec = Math.max(0, START_COUNTDOWN_SEC - elapsedSec);
+      const adjusted = elapsedSec - REST_DURATION_SEC;
+      const setIndex = Math.min(TOTAL_SETS - 1, Math.floor(adjusted / SET_DURATION_SEC));
+      const withinSet = adjusted - setIndex * SET_DURATION_SEC;
 
-      setNowEl.textContent = '0';
-      phaseEl.textContent = '⏳ 待機中';
-      countdownEl.textContent = String(Math.ceil(remainingSec)).padStart(2, '0');
-      elapsedEl.textContent = '00:00';
-      progressFillEl.style.width = '0%';
+      if (withinSet < EXERCISE_DURATION_SEC) {
+        return { phase: 'exercise', set: setIndex + 1, countdown: EXERCISE_DURATION_SEC - withinSet };
+      }
+
+      return { phase: 'rest', set: setIndex + 1, countdown: SET_DURATION_SEC - withinSet };
     }
 
     function updateWorkoutUI(now) {
@@ -905,27 +922,23 @@
         return;
       }
 
-      const currentSet = getCurrentSet(elapsedSec);
-      const setElapsed = elapsedSec % SET_DURATION_SEC;
-      const nextBeepIn = setElapsed < FIRST_BEEP_SEC
-        ? FIRST_BEEP_SEC - setElapsed
-        : SECOND_BEEP_SEC - setElapsed;
+      const info = getPhaseInfo(elapsedSec);
+      setNowEl.textContent = String(info.set);
 
-      setNowEl.textContent = String(currentSet);
-      phaseEl.textContent = setElapsed < FIRST_BEEP_SEC ? '💪 運動中' : '😌 休憩中';
-      countdownEl.textContent = String(Math.ceil(nextBeepIn)).padStart(2, '0');
+      if (info.phase === 'exercise') {
+        phaseEl.textContent = '💪 運動中';
+      } else {
+        phaseEl.textContent = info.set === 0 ? '⏳ 待機中' : '😌 休憩中';
+      }
 
-      const percent = Math.min(100, (elapsedSec / (TOTAL_SETS * SET_DURATION_SEC)) * 100);
+      countdownEl.textContent = String(Math.ceil(info.countdown)).padStart(2, '0');
+
+      const percent = Math.min(100, (elapsedSec / TOTAL_WORKOUT_SEC) * 100);
       progressFillEl.style.width = `${percent}%`;
     }
 
     function updateUI() {
       const now = performance.now();
-
-      if (appState === 'countdown') {
-        updateCountdownUI(now);
-        return;
-      }
 
       if (appState === 'running') {
         updateWorkoutUI(now);
@@ -940,7 +953,7 @@
       clearAllTimers();
       showCompletedDisplay();
       recordCompletion();
-      playOverallEndCue();
+      playFanfare();
       setRuntimeStatus('');
       void stopSleepPrevention();
     }
@@ -948,39 +961,39 @@
     function beginWorkout() {
       appState = 'running';
       workoutStartAt = performance.now();
-      workoutEndAt = workoutStartAt + TOTAL_SETS * SET_DURATION_SEC * 1000;
+      workoutEndAt = workoutStartAt + TOTAL_WORKOUT_SEC * 1000;
       updateActionButton();
       void requestWakeLock();
-      playWorkoutStartCue();
 
       for (let index = 0; index < TOTAL_SETS; index += 1) {
-        const setIndex = index + 1;
-        const baseDelay = index * SET_DURATION_SEC * 1000;
-        const workoutEndDelay = baseDelay + FIRST_BEEP_SEC * 1000;
-        const restEndDelay = baseDelay + SECOND_BEEP_SEC * 1000;
+        const exerciseStartMs = (REST_DURATION_SEC + index * SET_DURATION_SEC) * 1000;
+        const exerciseEndMs = exerciseStartMs + EXERCISE_DURATION_SEC * 1000;
 
-        scheduleCountdownSeries(workoutEndDelay, () => appState === 'running');
+        scheduleCountdownSeries(exerciseStartMs, () => appState === 'running');
 
         schedule(() => {
           if (appState !== 'running') {
             return;
           }
 
-          playWorkoutEndCue();
-        }, workoutEndDelay);
+          playWorkoutStartCue();
+        }, exerciseStartMs);
 
-        scheduleCountdownSeries(restEndDelay, () => appState === 'running');
-        if (setIndex < TOTAL_SETS) {
+        if (index < TOTAL_SETS - 1) {
+          scheduleCountdownSeries(exerciseEndMs, () => appState === 'running');
+
           schedule(() => {
             if (appState !== 'running') {
               return;
             }
 
-            playWorkoutStartCue();
-            progressFillEl.style.width = `${(setIndex / TOTAL_SETS) * 100}%`;
-          }, restEndDelay);
+            playWorkoutEndCue();
+          }, exerciseEndMs);
         }
       }
+
+      const totalMs = TOTAL_WORKOUT_SEC * 1000;
+      scheduleCountdownSeries(totalMs, () => appState === 'running');
 
       schedule(() => {
         if (appState !== 'running') {
@@ -988,13 +1001,13 @@
         }
 
         finishWorkout();
-      }, TOTAL_SETS * SET_DURATION_SEC * 1000);
+      }, totalMs);
 
       updateUI();
     }
 
     async function startSequence() {
-      if (appState === 'countdown' || appState === 'running') {
+      if (isSessionActive()) {
         return;
       }
 
@@ -1002,9 +1015,6 @@
       setRuntimeStatus('');
 
       clearAllTimers();
-      appState = 'countdown';
-      countdownStartAt = performance.now();
-      updateActionButton();
 
       const wakeLockPromise = requestWakeLock({ fromUserGesture: true });
 
@@ -1019,17 +1029,8 @@
         return;
       }
 
-      updateUI();
+      beginWorkout();
       intervalId = setInterval(updateUI, 100);
-      scheduleCountdownSeries(START_COUNTDOWN_SEC * 1000, () => appState === 'countdown');
-
-      schedule(() => {
-        if (appState !== 'countdown') {
-          return;
-        }
-
-        beginWorkout();
-      }, START_COUNTDOWN_SEC * 1000);
     }
 
     document.addEventListener('visibilitychange', () => {

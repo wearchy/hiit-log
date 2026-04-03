@@ -420,7 +420,21 @@
           { name: '7. ランナーアップ', build: () => [...repeatEvents(toneEvent({ duration: 0.12, frequency: 600, sweepTo: 680, type: 'sine', peakGain: 0.11 }), 2, 0.16), ...shiftEvents(toneEvent({ duration: 0.34, frequency: 760, sweepTo: 960, type: 'triangle', peakGain: 0.16 }), 0.42)] },
           { name: '8. 長めホーン', build: () => createHornUnit({ duration: 0.92, baseFrequency: 220, baseSweepTo: 300, overlayFrequency: 440, overlaySweepTo: 620, baseGain: 0.22, overlayGain: 0.1 }) },
           { name: '9. 静かな締め', build: () => [...toneEvent({ duration: 0.24, frequency: 420, sweepTo: 380, type: 'sine', peakGain: 0.11 }), ...shiftEvents(toneEvent({ duration: 0.26, frequency: 360, sweepTo: 320, type: 'sine', peakGain: 0.11 }), 0.28), ...shiftEvents(toneEvent({ duration: 0.44, frequency: 300, sweepTo: 220, type: 'triangle', peakGain: 0.12 }), 0.58)] },
-          { name: '10. アラーム寄り', build: () => [...repeatEvents(createTwoStepUnit(createBuzzUnit({ duration: 0.16, lowFrequency: 240, lowSweepTo: 260, highFrequency: 120, highSweepTo: 130, lowGain: 0.18, highGain: 0.1 }), createBuzzUnit({ duration: 0.16, lowFrequency: 260, lowSweepTo: 240, highFrequency: 130, highSweepTo: 120, lowGain: 0.18, highGain: 0.1 }), 0.16), 2, 0.46), ...shiftEvents(createBuzzUnit({ duration: 0.5, lowFrequency: 220, lowSweepTo: 170, highFrequency: 110, highSweepTo: 84, lowGain: 0.24, highGain: 0.12 }), 1.04)] }
+          { name: '10. アラーム寄り', build: () => [...repeatEvents(createTwoStepUnit(createBuzzUnit({ duration: 0.16, lowFrequency: 240, lowSweepTo: 260, highFrequency: 120, highSweepTo: 130, lowGain: 0.18, highGain: 0.1 }), createBuzzUnit({ duration: 0.16, lowFrequency: 260, lowSweepTo: 240, highFrequency: 130, highSweepTo: 120, lowGain: 0.18, highGain: 0.1 }), 0.16), 2, 0.46), ...shiftEvents(createBuzzUnit({ duration: 0.5, lowFrequency: 220, lowSweepTo: 170, highFrequency: 110, highSweepTo: 84, lowGain: 0.24, highGain: 0.12 }), 1.04)] },
+          {
+            name: '11. 🎉 ファンファーレ（採用中）',
+            build: () => [
+              ...toneEvent({ duration: 0.15, frequency: 523.25, sweepTo: 523.25, type: 'triangle', peakGain: 0.16 }),
+              ...shiftEvents(toneEvent({ duration: 0.15, frequency: 659.25, sweepTo: 659.25, type: 'triangle', peakGain: 0.16 }), 0.16),
+              ...shiftEvents(toneEvent({ duration: 0.15, frequency: 783.99, sweepTo: 783.99, type: 'triangle', peakGain: 0.17 }), 0.32),
+              ...shiftEvents(toneEvent({ duration: 0.55, frequency: 1046.50, sweepTo: 1046.50, type: 'triangle', peakGain: 0.18 }), 0.48),
+              ...shiftEvents(layeredEvents(0, 0.55, [
+                { type: 'sine', frequency: 523.25, sweepTo: 523.25, peakGain: 0.10 },
+                { type: 'sine', frequency: 659.25, sweepTo: 659.25, peakGain: 0.08 },
+                { type: 'sine', frequency: 783.99, sweepTo: 783.99, peakGain: 0.08 }
+              ]), 0.48)
+            ]
+          }
         ]
       }
     ];
