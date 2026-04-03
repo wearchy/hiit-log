@@ -347,6 +347,10 @@
     const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
     const COUNTDOWN_CUE_COUNT = 3;
     const RECENT_HISTORY_LIMIT = 21;
+    const SEED_HISTORY = [
+      '2026-04-01T14:23:14.000Z',
+      '2026-04-02T15:14:38.000Z',
+    ];
 
     let audioContext = null;
     let scheduledTimers = [];
@@ -600,11 +604,14 @@
 
     function loadHistory() {
       try {
-        completionHistory = readHistoryFromStorage();
+        completionHistory = dedupeHistoryEntries([
+          ...SEED_HISTORY,
+          ...readHistoryFromStorage(),
+        ]);
         setHistoryStatus();
       } catch (error) {
         console.error(error);
-        completionHistory = [];
+        completionHistory = dedupeHistoryEntries([...SEED_HISTORY]);
         setHistoryStatus('履歴の読み込みに失敗しました。ブラウザーの保存データを確認してください。');
       }
 
