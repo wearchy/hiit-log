@@ -149,6 +149,13 @@
       border-top: 1px solid var(--border);
     }
 
+    .history-count {
+      color: var(--sub);
+      font-size: 13px;
+      text-align: right;
+      margin-top: 8px;
+    }
+
     .history-download-btn {
       background: transparent;
       border: 1px solid var(--border);
@@ -367,7 +374,7 @@
 
     <section class="history">
       <details class="history-collapse history-graph-wrap" id="historyGraphWrap" hidden>
-        <summary><span id="historyCount">0 commits</span></summary>
+        <summary>Commits</summary>
         <div class="history-weekdays" aria-hidden="true">
           <span>Mon</span>
           <span>Tue</span>
@@ -378,6 +385,7 @@
           <span>Sun</span>
         </div>
         <div class="history-graph" id="historyGraph"></div>
+        <div class="history-count" id="historyCount">0 commits</div>
       </details>
       <details class="history-collapse history-log-wrap" id="historyLogWrap" hidden>
         <summary id="historyLogSummary">Recent</summary>
