@@ -234,15 +234,38 @@
     }
 
     .history-log-wrap {
-      display: grid;
-      gap: 8px;
       margin-top: 14px;
+    }
+
+    .history-log-wrap summary {
+      cursor: pointer;
+      color: var(--sub);
+      font-size: 13px;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .history-log-wrap summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .history-log-wrap summary::before {
+      content: '▶';
+      font-size: 10px;
+      transition: transform 0.15s;
+    }
+
+    .history-log-wrap[open] summary::before {
+      transform: rotate(90deg);
     }
 
     .history-log {
       list-style: none;
       padding: 0;
-      margin: 0;
+      margin: 8px 0 0;
       display: grid;
       gap: 10px;
       max-height: 220px;
@@ -257,6 +280,14 @@
       font-size: 14px;
       color: var(--text);
       word-break: break-word;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-log-item .late-badge {
+      margin-left: 8px;
+      flex-shrink: 0;
     }
 
     .history-empty {
@@ -354,9 +385,10 @@
         <span>Sun</span>
       </div>
       <div class="history-graph" id="historyGraph"></div>
-      <div class="history-log-wrap" id="historyLogWrap" hidden>
+      <details class="history-log-wrap" id="historyLogWrap" hidden>
+        <summary id="historyLogSummary">Recent</summary>
         <ul class="history-log" id="historyLog"></ul>
-      </div>
+      </details>
       <p class="history-status" id="historyStatus" aria-live="polite"></p>
     </section>
   </main>
@@ -431,10 +463,11 @@
     function formatHistoryEntry(value) {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) {
-        return value;
+        return { text: value, isLateNight: false };
       }
 
-      return formatDateTime(date);
+      const isLateNight = date.getHours() < NIGHT_CUTOFF_HOUR;
+      return { text: formatDateTime(date), isLateNight };
     }
 
     function renderStatusMessage() {
@@ -617,9 +650,19 @@
         .reverse()
         .slice(0, RECENT_HISTORY_LIMIT)
         .map(({ raw }) => {
+          const { text, isLateNight } = formatHistoryEntry(raw);
           const item = document.createElement('li');
           item.className = 'history-log-item';
-          item.textContent = formatHistoryEntry(raw);
+          const span = document.createElement('span');
+          span.textContent = text;
+          item.appendChild(span);
+          if (isLateNight) {
+            const badge = document.createElement('span');
+            badge.className = 'late-badge';
+            badge.textContent = '🌙';
+            badge.title = 'Counted as previous day';
+            item.appendChild(badge);
+          }
           return item;
         });
 
