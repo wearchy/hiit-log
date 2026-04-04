@@ -202,7 +202,6 @@
     .history-graph {
       display: grid;
       gap: 8px;
-      margin-bottom: 14px;
     }
 
     .history-cell {
@@ -233,11 +232,7 @@
       border-color: #86efac;
     }
 
-    .history-log-wrap {
-      margin-top: 14px;
-    }
-
-    .history-log-wrap summary {
+    .history-collapse summary {
       cursor: pointer;
       color: var(--sub);
       font-size: 13px;
@@ -248,18 +243,31 @@
       user-select: none;
     }
 
-    .history-log-wrap summary::-webkit-details-marker {
+    .history-collapse summary::-webkit-details-marker {
       display: none;
     }
 
-    .history-log-wrap summary::before {
+    .history-collapse summary::before {
       content: '▶';
       font-size: 10px;
       transition: transform 0.15s;
     }
 
-    .history-log-wrap[open] summary::before {
+    .history-collapse[open] summary::before {
       transform: rotate(90deg);
+    }
+
+    .history-graph-wrap {
+      margin-top: 4px;
+    }
+
+    .history-graph-wrap .history-weekdays,
+    .history-graph-wrap .history-graph {
+      margin-top: 10px;
+    }
+
+    .history-log-wrap {
+      margin-top: 14px;
     }
 
     .history-log {
@@ -375,17 +383,20 @@
       <div class="history-title">
         <span class="history-count" id="historyCount">0 commits</span>
       </div>
-      <div class="history-weekdays" aria-hidden="true">
-        <span>Mon</span>
-        <span>Tue</span>
-        <span>Wed</span>
-        <span>Thu</span>
-        <span>Fri</span>
-        <span>Sat</span>
-        <span>Sun</span>
-      </div>
-      <div class="history-graph" id="historyGraph"></div>
-      <details class="history-log-wrap" id="historyLogWrap" hidden>
+      <details class="history-collapse history-graph-wrap" id="historyGraphWrap" hidden>
+        <summary id="historyGraphSummary">Commits</summary>
+        <div class="history-weekdays" aria-hidden="true">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+        <div class="history-graph" id="historyGraph"></div>
+      </details>
+      <details class="history-collapse history-log-wrap" id="historyLogWrap" hidden>
         <summary id="historyLogSummary">Recent</summary>
         <ul class="history-log" id="historyLog"></ul>
       </details>
@@ -431,6 +442,7 @@
     const progressFillEl = document.getElementById('progressFill');
     const startBtn = document.getElementById('startBtn');
     const historyGraphEl = document.getElementById('historyGraph');
+    const historyGraphWrapEl = document.getElementById('historyGraphWrap');
     const historyLogWrapEl = document.getElementById('historyLogWrap');
     const historyLogEl = document.getElementById('historyLog');
     const historyCountEl = document.getElementById('historyCount');
@@ -611,7 +623,7 @@
       if (validEntries.length === 0) {
         historyGraphEl.replaceChildren();
         historyLogEl.replaceChildren();
-        historyGraphEl.hidden = true;
+        historyGraphWrapEl.hidden = true;
         historyLogWrapEl.hidden = true;
         return;
       }
@@ -668,7 +680,7 @@
 
       historyGraphEl.replaceChildren(...weekRows);
       historyLogEl.replaceChildren(...recentItems);
-      historyGraphEl.hidden = false;
+      historyGraphWrapEl.hidden = false;
       historyLogWrapEl.hidden = recentItems.length === 0;
     }
 
