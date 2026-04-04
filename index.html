@@ -149,19 +149,6 @@
       border-top: 1px solid var(--border);
     }
 
-    .history-title {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .history-count {
-      color: var(--sub);
-      font-size: 13px;
-    }
-
     .history-download-btn {
       background: transparent;
       border: 1px solid var(--border);
@@ -331,10 +318,6 @@
         font-size: clamp(22px, 7vw, 32px);
       }
 
-      .history-title {
-        justify-content: flex-end;
-      }
-
       .history-weekdays,
       .history-week {
         gap: 6px;
@@ -383,11 +366,8 @@
     </div>
 
     <section class="history">
-      <div class="history-title">
-        <span class="history-count" id="historyCount">0 commits</span>
-      </div>
       <details class="history-collapse history-graph-wrap" id="historyGraphWrap" hidden>
-        <summary id="historyGraphSummary">Commits</summary>
+        <summary><span id="historyCount">0 commits</span></summary>
         <div class="history-weekdays" aria-hidden="true">
           <span>Mon</span>
           <span>Tue</span>
